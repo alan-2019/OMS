@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>新建任务 - 设计稿</title>
+<style>
+  /* ============ Design Tokens ============ */
+  :root {
+    --primary: #2f6bff;
+    --primary-hover: #4d82ff;
+    --primary-active: #2457d6;
+    --primary-light: #eef3ff;
+    --text-primary: #1f2329;
+    --text-secondary: #646a73;
+    --text-muted: #8f959e;
+    --text-disabled: #bbbfc4;
+    --border: #d9dce3;
+    --border-light: #e8eaf0;
+    --bg-page: #f2f3f5;
+    --bg-white: #ffffff;
+    --bg-readonly: #f5f6f7;
+    --danger: #f54a45;
+    --radius: 6px;
+    --shadow-modal: 0 8px 32px rgba(31, 35, 41, .12), 0 2px 8px rgba(31, 35, 41, .08);
+    --transition: all .2s cubic-bezier(.4, 0, .2, 1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg-page);
+    color: var(--text-primary);
+    font-size: 14px;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 16px;
+  }
+
+  /* ============ 弹窗 ============ */
+  .modal-mask {
+    position: fixed;
+    inset: 0;
+    background: rgba(31, 35, 41, .45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 100;
+  }
+  .modal-mask.hidden { display: none; }
+
+  .modal {
+    width: 760px;
+    max-width: 100%;
+    max-height: calc(100vh - 48px);
+    background: var(--bg-white);
+    border-radius: 10px;
+    box-shadow: var(--shadow-modal);
+    display: flex;
+    flex-direction: column;
+    animation: modalIn .25s cubic-bezier(.4, 0, .2, 1);
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(16px) scale(.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border-light);
+    flex-shrink: 0;
+  }
+  .modal-title { font-size: 16px; font-weight: 600; }
+  .modal-close {
+    width: 32px; height: 32px;
+    border: none; background: transparent;
+    border-radius: var(--radius);
+    color: var(--text-secondary);
+    font-size: 18px; line-height: 1;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: var(--transition);
+  }
+  .modal-close:hover { background: var(--bg-readonly); color: var(--text-primary); }
+
+  .modal-body { padding: 24px 28px 8px; overflow-y: auto; }
+
+  /* ============ 表单 ============ */
+  .form-row {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 20px;
+  }
+  .form-label {
+    width: 92px;
+    flex-shrink: 0;
+    padding-top: 7px;
+    color: var(--text-secondary);
+    text-align: right;
+    margin-right: 12px;
+    line-height: 20px;
+  }
+  .form-label .req { color: var(--danger); margin-right: 4px; }
+  .form-field { flex: 1; min-width: 0; }
+
+  /* 输入控件通用 */
+  .input, .select {
+    width: 100%;
+    height: 34px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0 12px;
+    font-size: 14px;
+    color: var(--text-primary);
+    background: var(--bg-white);
+    outline: none;
+    transition: var(--transition);
+    font-family: inherit;
+  }
+  .input::placeholder { color: var(--text-disabled); }
+  .input:hover, .select:hover { border-color: var(--primary-hover); }
+  .input:focus, .select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(47, 107, 255, .12); }
+
+  .select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 30px;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5L6 8l3.5-3.5' fill='none' stroke='%238f959e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+  }
+  .select.placeholder { color: var(--text-disabled); }
+
+  /* 任务名称:计数器内嵌 */
+  .input-count-wrap { position: relative; }
+  .input-count-wrap .input { padding-right: 58px; }
+  .input-count {
+    position: absolute;
+    right: 12px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 12px;
+    pointer-events: none;
+  }
+
+  /* 双列行 */
+  .field-inline { display: flex; gap: 12px; align-items: center; }
+  .field-inline > * { flex: 1; min-width: 0; }
+  .link-btn {
+    flex-shrink: 0;
+    border: none; background: none;
+    color: var(--primary);
+    font-size: 14px; cursor: pointer;
+    padding: 0 2px;
+    transition: var(--transition);
+  }
+  .link-btn:hover { color: var(--primary-hover); text-decoration: underline; }
+
+  /* ============ 人员选择(员工 + 自动带出部门) ============ */
+  .emp-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+  }
+  .emp-unit {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    animation: unitIn .2s ease;
+  }
+  @keyframes unitIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .emp-unit--full { grid-column: 1 / -1; }
+
+  /* 自定义人员下拉:选项为「姓名 + 部门」两行样式 */
+  .emp-select { position: relative; flex: 1; min-width: 0; }
+  .emp-select-trigger {
+    position: relative;
+    width: 100%;
+    height: 34px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0 30px 0 12px;
+    font-size: 14px;
+    background: var(--bg-white);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: var(--transition);
+    user-select: none;
+  }
+  .emp-select-trigger .emp-trigger-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    text-align: left;
+  }
+  .emp-select-trigger.placeholder .emp-trigger-text { color: var(--text-disabled); }
+  .emp-select-trigger:hover { border-color: var(--primary-hover); }
+  .emp-select.open .emp-select-trigger { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(47, 107, 255, .12); }
+  .emp-select-trigger .chev {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    transition: var(--transition);
+  }
+  .emp-select.open .emp-select-trigger .chev { transform: translateY(-50%) rotate(180deg); }
+
+  .emp-panel {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    min-width: 100%;
+    background: var(--bg-white);
+    border-radius: 8px;
+    box-shadow: 0 6px 24px rgba(31, 35, 41, .14), 0 0 0 1px rgba(31, 35, 41, .04);
+    padding: 6px;
+    z-index: 60;
+    display: none;
+    max-height: 264px;
+    overflow-y: auto;
+    animation: panelIn .15s ease;
+  }
+  .emp-select.open .emp-panel { display: block; }
+  @keyframes panelIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .emp-option {
+    padding: 9px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .emp-option:hover { background: var(--bg-readonly); }
+  .emp-option.selected { background: #dbe9ff; }
+  .emp-option.selected .emp-name { color: var(--primary); }
+  .emp-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1.4;
+  }
+  .emp-dept {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    line-height: 1.3;
+  }
+
+  /* 加号 / 减号 圆形图标按钮 */
+  .icon-btn {
+    width: 22px; height: 22px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--bg-white);
+    color: var(--text-secondary);
+    font-size: 14px; line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    transition: var(--transition);
+    padding: 0;
+  }
+  .icon-btn:hover { border-color: var(--primary); color: var(--primary); }
+  .icon-btn.minus:hover { border-color: var(--danger); color: var(--danger); }
+  .icon-btn.minus:disabled,
+  .icon-btn.minus:disabled:hover {
+    color: var(--text-disabled);
+    border-color: var(--border-light);
+    background: var(--bg-readonly);
+    cursor: not-allowed;
+  }
+  .emp-unit .icon-btn.minus { width: 20px; height: 20px; font-size: 13px; }
+  .icon-btn.add { width: 20px; height: 20px; font-size: 13px; }
+  .emp-grid > .icon-btn.add { align-self: center; justify-self: start; }
+
+  /* 截止日期 */
+  .date-wrap { position: relative; max-width: 240px; }
+  .date-wrap .input { padding-right: 34px; cursor: pointer; }
+  .date-wrap .date-icon {
+    position: absolute; right: 11px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+    display: flex;
+  }
+
+  /* 任务描述 */
+  .textarea-wrap { position: relative; }
+  .textarea {
+    width: 100%;
+    min-height: 120px;
+    resize: vertical;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px 26px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text-primary);
+    outline: none;
+    transition: var(--transition);
+    line-height: 1.6;
+  }
+  .textarea::placeholder { color: var(--text-disabled); }
+  .textarea:hover { border-color: var(--primary-hover); }
+  .textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(47, 107, 255, .12); }
+  .textarea-count {
+    position: absolute;
+    right: 12px; bottom: 9px;
+    color: var(--text-muted);
+    font-size: 12px;
+    pointer-events: none;
+  }
+
+  /* 单选 */
+  .radio-group { display: flex; gap: 28px; padding-top: 7px; }
+  .radio-item {
+    display: flex; align-items: center; gap: 7px;
+    cursor: pointer; color: var(--text-primary);
+    user-select: none;
+  }
+  .radio-item input { display: none; }
+  .radio-dot {
+    width: 15px; height: 15px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    position: relative;
+    transition: var(--transition);
+    flex-shrink: 0;
+  }
+  .radio-item input:checked + .radio-dot { border-color: var(--primary); border-width: 5px; }
+  .radio-item:hover .radio-dot { border-color: var(--primary-hover); }
+
+  /* 上传 */
+  .upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 34px;
+    padding: 0 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-white);
+    color: var(--text-primary);
+    font-size: 14px;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .upload-btn:hover { border-color: var(--primary); color: var(--primary); }
+  .upload-tip {
+    margin-top: 10px;
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.7;
+    display: flex;
+    gap: 6px;
+  }
+  .upload-tip svg { flex-shrink: 0; margin-top: 2px; }
+  .file-list { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .file-chip {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px;
+    background: var(--bg-readonly);
+    border-radius: var(--radius);
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .file-chip .file-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-chip .file-del { border: none; background: none; color: var(--text-muted); cursor: pointer; font-size: 14px; padding: 0 2px; }
+  .file-chip .file-del:hover { color: var(--danger); }
+
+  /* ============ 底部按钮 ============ */
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-light);
+    flex-shrink: 0;
+  }
+  .btn {
+    height: 34px;
+    padding: 0 18px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--bg-white);
+    color: var(--text-primary);
+    transition: var(--transition);
+    font-family: inherit;
+  }
+  .btn:hover { border-color: var(--primary); color: var(--primary); }
+  .btn-primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+  }
+  .btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: #fff; }
+  .btn-primary:active { background: var(--primary-active); border-color: var(--primary-active); }
+
+  /* 重新打开按钮(演示用) */
+  .reopen-btn {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 50;
+  }
+
+  /* ============ 批量添加 ============ */
+  .form-label .batch-link {
+    display: block;
+    margin-top: 4px;
+    width: 100%;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--primary);
+    font-size: 12px;
+    text-align: right;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .form-label .batch-link:hover { color: var(--primary-hover); text-decoration: underline; }
+
+  .batch-mask {
+    position: fixed;
+    inset: 0;
+    background: rgba(31, 35, 41, .35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 150;
+  }
+  .batch-mask.hidden { display: none; }
+  .batch-modal {
+    width: 880px;
+    max-width: 100%;
+    max-height: calc(100vh - 48px);
+    background: var(--bg-white);
+    border-radius: 10px;
+    box-shadow: var(--shadow-modal);
+    display: flex;
+    flex-direction: column;
+    animation: modalIn .25s cubic-bezier(.4, 0, .2, 1);
+  }
+  /* 左右分栏:左输入、右结果 */
+  .batch-body {
+    padding: 16px 24px 20px;
+    display: flex;
+    gap: 18px;
+    min-height: 340px;
+    overflow: hidden;
+  }
+  .batch-left { width: 40%; flex-shrink: 0; display: flex; flex-direction: column; }
+  .batch-right { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .batch-col-title { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; flex-shrink: 0; }
+  .batch-textarea {
+    width: 100%;
+    flex: 1;
+    min-height: 280px;
+    resize: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text-primary);
+    outline: none;
+    transition: var(--transition);
+    line-height: 1.6;
+  }
+  .batch-textarea::placeholder { color: var(--text-disabled); }
+  .batch-textarea:hover { border-color: var(--primary-hover); }
+  .batch-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(47, 107, 255, .12); }
+
+  .batch-summary { margin: 0 0 8px; font-size: 13px; color: var(--text-secondary); display: flex; gap: 14px; flex-wrap: wrap; flex-shrink: 0; }
+  .batch-summary b { font-weight: 600; margin: 0 2px; }
+  .bs-ok { color: #00b42a; }
+  .bs-dup { color: #ff7d00; }
+  .bs-bad { color: var(--danger); }
+  .bs-skip { color: var(--text-muted); }
+
+  .batch-result { border: 1px solid var(--border-light); border-radius: 8px; flex: 1; min-height: 0; overflow-y: auto; }
+  .batch-empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.8;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+  }
+  .br-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 12px; }
+  .br-row + .br-row { border-top: 1px solid var(--border-light); }
+  .br-icon { width: 18px; flex-shrink: 0; text-align: center; line-height: 22px; font-size: 13px; }
+  .br-main { flex: 1; min-width: 0; line-height: 22px; }
+  .br-name { font-weight: 500; }
+  .br-arrow { color: var(--text-muted); margin: 0 6px; }
+  .br-matched { color: var(--text-secondary); }
+  .br-tip { font-size: 12px; color: var(--text-muted); margin-left: 8px; }
+  .br-tip.warn { color: #ff7d00; }
+  .br-tip.error { color: var(--danger); }
+  .dup-chips { display: inline-flex; gap: 8px; flex-wrap: wrap; margin-left: 4px; vertical-align: middle; }
+  .dup-chip {
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    padding: 2px 10px;
+    font-size: 12px;
+    font-family: inherit;
+    color: var(--text-secondary);
+    background: var(--bg-white);
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .dup-chip:hover { border-color: var(--primary-hover); color: var(--primary); }
+  .dup-chip.active { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+  .br-del { border: none; background: none; color: var(--text-muted); cursor: pointer; font-size: 13px; padding: 2px 4px; line-height: 22px; flex-shrink: 0; }
+  .br-del:hover { color: var(--danger); }
+  .batch-foot-hint { flex: 1; text-align: left; font-size: 12px; color: #ff7d00; align-self: center; }
+
+  .btn:disabled, .btn:disabled:hover {
+    opacity: .5;
+    cursor: not-allowed;
+  }
+  .btn-primary:disabled, .btn-primary:disabled:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    top: 32px; left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    background: rgba(31, 35, 41, .85);
+    color: #fff;
+    padding: 9px 18px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: var(--transition);
+    z-index: 200;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- 弹窗关闭后的演示按钮 -->
+<button class="btn btn-primary reopen-btn" id="reopenBtn" style="display:none;">打开「新建任务」弹窗</button>
+
+<div class="modal-mask" id="modalMask">
+  <div class="modal" role="dialog" aria-label="新建任务">
+    <!-- 头部 -->
+    <div class="modal-header">
+      <div class="modal-title">新建任务</div>
+      <button class="modal-close" id="closeBtn" aria-label="关闭">✕</button>
+    </div>
+
+    <!-- 表单主体 -->
+    <div class="modal-body">
+      <!-- 任务名称 -->
+      <div class="form-row">
+        <div class="form-label"><span class="req">*</span>任务名称：</div>
+        <div class="form-field">
+          <div class="input-count-wrap">
+            <input class="input" id="taskName" maxlength="100" placeholder="请输入任务名称（不超过100字）">
+            <span class="input-count"><span id="nameCount">0</span>/100</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 任务分类 -->
+      <div class="form-row">
+        <div class="form-label"><span class="req">*</span>任务分类：</div>
+        <div class="form-field">
+          <div class="field-inline">
+            <select class="select placeholder" id="catLevel1">
+              <option value="" selected disabled>请选择一级分类</option>
+              <option>整改任务</option>
+              <option>巡检任务</option>
+              <option>维修任务</option>
+              <option>保养任务</option>
+            </select>
+            <select class="select placeholder" id="catLevel2">
+              <option value="" selected disabled>请选择末级分类</option>
+            </select>
+            <button class="link-btn" id="maintainCat">维护分类</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 责任人:选员工自动带出部门 -->
+      <div class="form-row">
+        <div class="form-label"><span class="req">*</span>责任人：</div>
+        <div class="emp-grid" id="ownerGrid"></div>
+      </div>
+
+      <!-- 协同人:可加号追加,一行两个,支持批量添加 -->
+      <div class="form-row">
+        <div class="form-label">协同人：<button class="batch-link" data-target="collab">批量添加</button></div>
+        <div class="emp-grid" id="collabGrid"></div>
+      </div>
+
+      <!-- 抄送人:可加号追加,一行两个,支持批量添加 -->
+      <div class="form-row">
+        <div class="form-label">抄送人：<button class="batch-link" data-target="cc">批量添加</button></div>
+        <div class="emp-grid" id="ccGrid"></div>
+      </div>
+
+      <!-- 优先级 -->
+      <div class="form-row">
+        <div class="form-label"><span class="req">*</span>优先级：</div>
+        <div class="form-field">
+          <div style="max-width:240px;">
+            <select class="select placeholder" id="priority">
+              <option value="" selected disabled>请选择优先级</option>
+              <option>高</option>
+              <option>中</option>
+              <option>低</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 截止日期 -->
+      <div class="form-row">
+        <div class="form-label"><span class="req">*</span>截止日期：</div>
+        <div class="form-field">
+          <div class="date-wrap">
+            <input class="input" id="deadline" placeholder="请选择截止日期" readonly>
+            <span class="date-icon">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" stroke-width="1.3">
+                <rect x="1.5" y="2.5" width="12" height="11" rx="1.5"/>
+                <path d="M1.5 6h12M5 1v3M10 1v3"/>
+              </svg>
+            </span>
+            <input type="date" id="deadlinePicker" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+          </div>
+        </div>
+      </div>
+
+      <!-- 任务描述 -->
+      <div class="form-row">
+        <div class="form-label">任务描述：</div>
+        <div class="form-field">
+          <div class="textarea-wrap">
+            <textarea class="textarea" id="taskDesc" maxlength="1000" placeholder="请输入任务描述"></textarea>
+            <span class="textarea-count"><span id="descCount">0</span> / 1000</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 交付物 -->
+      <div class="form-row">
+        <div class="form-label">交付物：</div>
+        <div class="form-field">
+          <div class="radio-group">
+            <label class="radio-item">
+              <input type="radio" name="deliverable" value="need">
+              <span class="radio-dot"></span>需要
+            </label>
+            <label class="radio-item">
+              <input type="radio" name="deliverable" value="none" checked>
+              <span class="radio-dot"></span>不需要
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 上传附件 -->
+      <div class="form-row">
+        <div class="form-label">上传附件：</div>
+        <div class="form-field">
+          <button class="upload-btn" id="uploadBtn">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7 9.5V2M4 4.5L7 1.5l3 3M2 10v2a1 1 0 001 1h8a1 1 0 001-1v-2"/>
+            </svg>
+            上传附件
+          </button>
+          <input type="file" id="fileInput" multiple hidden
+                 accept=".xls,.xlsx,.csv,.doc,.docx,.txt,.ppt,.pptx,.pdf,.png,.jpg,.jpeg">
+          <div class="file-list" id="fileList"></div>
+          <div class="upload-tip">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="6.5" cy="6.5" r="5.5"/>
+              <path d="M6.5 6v3M6.5 4v.2" stroke-linecap="round"/>
+            </svg>
+            <span>支持格式：xls、xlsx、csv、doc、docx、txt、ppt、pptx、pdf、png、jpg、jpeg。单个文件不超过 50MB，最多上传10个文件，文件名不超过100个字符。</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部 -->
+    <div class="modal-footer">
+      <button class="btn" id="cancelBtn">取 消</button>
+      <button class="btn" id="draftBtn">保存草稿</button>
+      <button class="btn btn-primary" id="publishBtn">保存并发布</button>
+    </div>
+  </div>
+</div>
+
+<!-- 批量添加弹窗 -->
+<div class="batch-mask hidden" id="batchMask">
+  <div class="batch-modal" role="dialog" aria-label="批量添加">
+    <div class="modal-header">
+      <div class="modal-title" id="batchTitle">批量添加</div>
+      <button class="modal-close" id="batchClose" aria-label="关闭">✕</button>
+    </div>
+    <div class="batch-body">
+      <!-- 左侧:输入框 -->
+      <div class="batch-left">
+        <div class="batch-col-title">输入姓名</div>
+        <textarea class="batch-textarea" id="batchInput" placeholder="请输入员工姓名，多个姓名可用逗号、顿号、空格或换行分隔，例如：&#10;张伟、李娜、王强"></textarea>
+      </div>
+      <!-- 右侧:匹配结果 -->
+      <div class="batch-right">
+        <div class="batch-col-title">匹配结果</div>
+        <div class="batch-summary" id="batchSummary" style="display:none;"></div>
+        <div class="batch-result" id="batchResult" style="display:none;"></div>
+        <div class="batch-empty" id="batchEmpty">输入姓名后将自动匹配员工并显示结果<br>支持一次性输入多个，例如 10 个用户名</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <span class="batch-foot-hint" id="batchHint"></span>
+      <button class="btn" id="batchCancel">取 消</button>
+      <button class="btn btn-primary" id="batchConfirm" disabled>确认添加</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= Mock 员工数据(员工 → 部门) ================= */
+const EMPLOYEES = [
+  { name: '张伟',  dept: '运维管理部' },
+  { name: '李娜',  dept: '运维管理部' },
+  { name: '李娜',  dept: '技术支援部' },   // 重名演示数据
+  { name: '王强',  dept: '安全生产部' },
+  { name: '刘洋',  dept: '设备管理部' },
+  { name: '陈静',  dept: '综合管理部' },
+  { name: '赵磊',  dept: '技术支援部' },
+  { name: '孙丽',  dept: '安全生产部' },
+  { name: '周杰',  dept: '设备管理部' }
+];
+
+/* ================= 人员选择单元:自定义下拉,选项为「姓名 + 部门」两行样式 ================= */
+const CHEV_SVG = '<svg width="12" height="12" viewBox="0 0 12 12"><path d="M2.5 4.5L6 8l3.5-3.5" fill="none" stroke="#8f959e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+function closeAllEmpPanels() {
+  document.querySelectorAll('.emp-select.open').forEach(s => s.classList.remove('open'));
+}
+document.addEventListener('click', closeAllEmpPanels);
+
+/**
+ * 创建一个员工选择单元
+ * @param {Object} opts
+ * @param {boolean} opts.removable 是否显示减号(可移除)
+ * @param {Function} opts.onRemove 点击减号回调
+ */
+function createEmpUnit({ removable = false, onRemove, preset } = {}) {
+  const unit = document.createElement('div');
+  unit.className = 'emp-unit';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'emp-select';
+  wrap.innerHTML = `
+    <div class="emp-select-trigger placeholder">
+      <span class="emp-trigger-text">请选择员工</span>
+      <span class="chev">${CHEV_SVG}</span>
+    </div>
+    <div class="emp-panel">
+      ${EMPLOYEES.map(e => `
+        <div class="emp-option" data-name="${e.name}" data-dept="${e.dept}">
+          <div class="emp-name">${e.name}</div>
+          <div class="emp-dept">${e.dept}</div>
+        </div>`).join('')}
+    </div>`;
+
+  const trigger = wrap.querySelector('.emp-select-trigger');
+  const triggerText = wrap.querySelector('.emp-trigger-text');
+  const panel = wrap.querySelector('.emp-panel');
+
+  // 点击触发框:展开/收起面板(同时关闭其他面板)
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const willOpen = !wrap.classList.contains('open');
+    closeAllEmpPanels();
+    if (willOpen) wrap.classList.add('open');
+  });
+
+  // 点击选项:选中后触发框显示「姓名（部门）」
+  panel.addEventListener('click', (e) => {
+    const opt = e.target.closest('.emp-option');
+    if (!opt) return;
+    panel.querySelectorAll('.emp-option').forEach(o => o.classList.remove('selected'));
+    opt.classList.add('selected');
+    triggerText.textContent = `${opt.dataset.name}（${opt.dataset.dept}）`;
+    trigger.classList.remove('placeholder');
+    wrap.dataset.value = opt.dataset.name;
+    wrap.dataset.dept = opt.dataset.dept;
+    wrap.classList.remove('open');
+  });
+
+  unit.appendChild(wrap);
+
+  if (removable) {
+    const minus = document.createElement('button');
+    minus.className = 'icon-btn minus';
+    minus.title = '移除';
+    minus.textContent = '－';
+    minus.addEventListener('click', () => onRemove && onRemove(unit));
+    unit.appendChild(minus);
+  }
+
+  // 批量添加时按「姓名+部门」预选指定员工
+  if (preset) {
+    const opt = [...panel.querySelectorAll('.emp-option')]
+      .find(o => o.dataset.name === preset.name && o.dataset.dept === preset.dept);
+    if (opt) {
+      opt.classList.add('selected');
+      triggerText.textContent = `${preset.name}（${preset.dept}）`;
+      trigger.classList.remove('placeholder');
+      wrap.dataset.value = preset.name;
+      wrap.dataset.dept = preset.dept;
+    }
+  }
+  return unit;
+}
+
+/** 初始化一个人员分组:每个员工(含第一个)后面都有减号,加号始终放在最后一个减号后面 */
+function initEmpGroup(gridEl, { withAdd = false, fullWidth = false } = {}) {
+  let addBtn = null;
+  // 加号跟到最后一个员工后面(排在其减号之后);员工全部移除时加号单独留在网格里
+  const placeAdd = () => {
+    if (!addBtn) return;
+    const units = gridEl.querySelectorAll('.emp-unit');
+    (units.length ? units[units.length - 1] : gridEl).appendChild(addBtn);
+  };
+  // 只剩一个员工时减号置灰禁用,至少保留一个
+  const refreshMinus = () => {
+    const disable = gridEl.querySelectorAll('.emp-unit').length <= 1;
+    gridEl.querySelectorAll('.emp-unit .icon-btn.minus').forEach(b => { b.disabled = disable; });
+  };
+  const removeUnit = (u) => { u.remove(); placeAdd(); refreshMinus(); };
+  if (withAdd) {
+    addBtn = document.createElement('button');
+    addBtn.className = 'icon-btn add';
+    addBtn.title = '添加';
+    addBtn.textContent = '＋';
+    addBtn.addEventListener('click', () => {
+      if (gridEl.querySelectorAll('.emp-unit').length >= EMPLOYEES.length) {
+        showToast('可选员工已全部添加');
+        return;
+      }
+      gridEl.appendChild(createEmpUnit({ removable: true, onRemove: removeUnit }));
+      placeAdd();
+      refreshMinus();
+    });
+  }
+  // 可加号追加的分组:第一个员工也带减号,可移除
+  const first = createEmpUnit({ removable: withAdd, onRemove: removeUnit });
+  if (fullWidth) first.classList.add('emp-unit--full');
+  gridEl.appendChild(first);
+  placeAdd();
+  refreshMinus();
+
+  // 对外暴露:批量添加 & 已选员工查询
+  return {
+    addBatch(list) {
+      list.forEach(emp => {
+        if (gridEl.querySelectorAll('.emp-unit').length >= EMPLOYEES.length) return;
+        gridEl.appendChild(createEmpUnit({ removable: true, onRemove: removeUnit, preset: emp }));
+      });
+      placeAdd();
+      refreshMinus();
+    },
+    getExisting() {
+      return [...gridEl.querySelectorAll('.emp-select')]
+        .filter(w => w.dataset.value)
+        .map(w => ({ name: w.dataset.value, dept: w.dataset.dept }));
+    }
+  };
+}
+
+initEmpGroup(document.getElementById('ownerGrid'), { fullWidth: true }); // 责任人:单个,整行宽
+const groupApis = {
+  collab: initEmpGroup(document.getElementById('collabGrid'), { withAdd: true }),  // 协同人
+  cc: initEmpGroup(document.getElementById('ccGrid'), { withAdd: true })           // 抄送人
+};
+
+/* ================= 字数统计 ================= */
+const taskName = document.getElementById('taskName');
+const taskDesc = document.getElementById('taskDesc');
+taskName.addEventListener('input', () => document.getElementById('nameCount').textContent = taskName.value.length);
+taskDesc.addEventListener('input', () => document.getElementById('descCount').textContent = taskDesc.value.length);
+
+/* ================= 任务分类:一级联动末级 ================= */
+const SUB_CATS = {
+  '整改任务': ['资料整改', '设备整改', '安全隐患整改'],
+  '巡检任务': ['日常巡检', '专项巡检', '夜间巡检'],
+  '维修任务': ['故障维修', '紧急抢修'],
+  '保养任务': ['定期保养', '季节性保养']
+};
+const catLevel1 = document.getElementById('catLevel1');
+const catLevel2 = document.getElementById('catLevel2');
+catLevel1.addEventListener('change', () => {
+  catLevel1.classList.remove('placeholder');
+  const subs = SUB_CATS[catLevel1.value] || [];
+  catLevel2.innerHTML = '<option value="" selected disabled>请选择末级分类</option>' +
+    subs.map(s => `<option>${s}</option>`).join('');
+  catLevel2.classList.add('placeholder');
+});
+catLevel2.addEventListener('change', () => catLevel2.classList.remove('placeholder'));
+document.getElementById('priority').addEventListener('change', (e) => e.target.classList.remove('placeholder'));
+
+/* ================= 截止日期 ================= */
+const deadline = document.getElementById('deadline');
+const deadlinePicker = document.getElementById('deadlinePicker');
+deadlinePicker.addEventListener('change', () => { deadline.value = deadlinePicker.value; });
+
+/* ================= 上传附件 ================= */
+const fileInput = document.getElementById('fileInput');
+const fileList = document.getElementById('fileList');
+document.getElementById('uploadBtn').addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => {
+  const files = Array.from(fileInput.files);
+  if (fileList.children.length + files.length > 10) { showToast('最多上传10个文件'); return; }
+  files.forEach(f => {
+    if (f.size > 50 * 1024 * 1024) { showToast(`「${f.name}」超过50MB`); return; }
+    const chip = document.createElement('div');
+    chip.className = 'file-chip';
+    chip.innerHTML = `<span class="file-name">${f.name}</span><button class="file-del" title="删除">✕</button>`;
+    chip.querySelector('.file-del').addEventListener('click', () => chip.remove());
+    fileList.appendChild(chip);
+  });
+  fileInput.value = '';
+});
+
+/* ================= 弹窗开关 & 按钮 ================= */
+const mask = document.getElementById('modalMask');
+const reopenBtn = document.getElementById('reopenBtn');
+const closeModal = () => { mask.classList.add('hidden'); reopenBtn.style.display = ''; };
+document.getElementById('closeBtn').addEventListener('click', closeModal);
+document.getElementById('cancelBtn').addEventListener('click', closeModal);
+reopenBtn.addEventListener('click', () => { mask.classList.remove('hidden'); reopenBtn.style.display = 'none'; });
+
+document.getElementById('draftBtn').addEventListener('click', () => showToast('草稿已保存'));
+document.getElementById('publishBtn').addEventListener('click', () => {
+  if (!taskName.value.trim()) { showToast('请填写任务名称'); taskName.focus(); return; }
+  showToast('任务已发布');
+});
+document.getElementById('maintainCat').addEventListener('click', () => showToast('跳转「分类维护」页面（演示）'));
+
+/* ================= 批量添加 ================= */
+const GROUP_TITLES = { collab: '协同人', cc: '抄送人' };
+const batchMask = document.getElementById('batchMask');
+const batchTitle = document.getElementById('batchTitle');
+const batchInput = document.getElementById('batchInput');
+const batchSummary = document.getElementById('batchSummary');
+const batchResult = document.getElementById('batchResult');
+const batchEmpty = document.getElementById('batchEmpty');
+const batchHint = document.getElementById('batchHint');
+const batchConfirm = document.getElementById('batchConfirm');
+let batchTarget = null;
+let batchRows = [];
+let batchTimer;
+
+document.querySelectorAll('.batch-link').forEach(btn => {
+  btn.addEventListener('click', () => openBatch(btn.dataset.target));
+});
+
+function openBatch(target) {
+  batchTarget = target;
+  batchTitle.textContent = `批量添加${GROUP_TITLES[target]}`;
+  batchInput.value = '';
+  batchRows = [];
+  renderBatchResult();
+  batchMask.classList.remove('hidden');
+  setTimeout(() => batchInput.focus(), 50);
+}
+function closeBatch() { batchMask.classList.add('hidden'); batchTarget = null; }
+document.getElementById('batchClose').addEventListener('click', closeBatch);
+document.getElementById('batchCancel').addEventListener('click', closeBatch);
+
+// 输入后 300ms 防抖自动解析匹配
+batchInput.addEventListener('input', () => {
+  clearTimeout(batchTimer);
+  batchTimer = setTimeout(renderBatchResult, 300);
+});
+
+// 支持逗号/顿号/分号/空格/换行分隔,同名输入自动去重
+function parseNames(text) {
+  return [...new Set(text.split(/[,，、;；\s]+/).map(s => s.trim()).filter(Boolean))];
+}
+
+function renderBatchResult() {
+  if (!batchTarget) return;
+  const existing = groupApis[batchTarget].getExisting();
+  const names = parseNames(batchInput.value);
+
+  if (!names.length) {
+    batchRows = [];
+    batchSummary.style.display = 'none';
+    batchResult.style.display = 'none';
+    batchEmpty.style.display = '';
+    batchHint.textContent = '';
+    batchConfirm.disabled = true;
+    batchConfirm.textContent = '确认添加';
+    return;
+  }
+  batchEmpty.style.display = 'none';
+  batchResult.style.display = '';
+
+  // 重新解析时保留此前对重名的人工选择
+  const prevChoices = {};
+  batchRows.forEach(r => { if (r.status === 'dup' && r.chosen) prevChoices[r.input] = r.chosen; });
+
+  batchRows = names.map(name => {
+    const matches = EMPLOYEES.filter(e => e.name === name);
+    if (matches.length === 0) return { input: name, status: 'notfound' };
+    if (matches.length === 1) {
+      return existing.some(x => x.name === name && x.dept === matches[0].dept)
+        ? { input: name, status: 'exists', matches }
+        : { input: name, status: 'ok', matches };
+    }
+    // 重名:需要人工干预选择
+    const row = { input: name, status: 'dup', matches, chosen: prevChoices[name] || null };
+    if (row.chosen && !matches.some(m => m.dept === row.chosen.dept)) row.chosen = null;
+    return row;
+  });
+
+  const ICONS = {
+    ok: '<span style="color:#00b42a">✓</span>',
+    dup: '<span style="color:#ff7d00">⚠</span>',
+    notfound: '<span style="color:var(--danger)">✕</span>',
+    exists: '<span style="color:var(--text-muted)">⊘</span>'
+  };
+  batchResult.innerHTML = batchRows.map((r, i) => {
+    let body = '';
+    if (r.status === 'ok') {
+      body = `<span class="br-name">${r.input}</span><span class="br-arrow">→</span><span class="br-matched">${r.matches[0].name}（${r.matches[0].dept}）</span>`;
+    } else if (r.status === 'exists') {
+      body = `<span class="br-name">${r.input}</span><span class="br-tip">已在列表中，将自动跳过</span>`;
+    } else if (r.status === 'notfound') {
+      body = `<span class="br-name">${r.input}</span><span class="br-tip error">未找到该员工</span>`;
+    } else {
+      body = `<span class="br-name">${r.input}</span><span class="br-tip warn">重名，请选择：</span><span class="dup-chips">${
+        r.matches.map(m => `<button class="dup-chip ${r.chosen && r.chosen.dept === m.dept ? 'active' : ''}" data-row="${i}" data-dept="${m.dept}">${m.name}（${m.dept}）</button>`).join('')
+      }</span>`;
+    }
+    const del = (r.status === 'notfound' || r.status === 'exists') ? `<button class="br-del" data-row="${i}" title="移除">✕</button>` : '';
+    return `<div class="br-row"><span class="br-icon">${ICONS[r.status]}</span><div class="br-main">${body}</div>${del}</div>`;
+  }).join('');
+
+  // 汇总统计
+  const c = { ok: 0, dup: 0, dupDone: 0, notfound: 0, exists: 0 };
+  batchRows.forEach(r => { c[r.status]++; if (r.status === 'dup' && r.chosen) c.dupDone++; });
+  const addable = c.ok + c.dupDone;
+  batchSummary.style.display = '';
+  batchSummary.innerHTML = `共解析 <b>${batchRows.length}</b> 项：<span class="bs-ok">✓ 可添加 ${c.ok}</span>` +
+    (c.dup ? `<span class="bs-dup">⚠ 重名 ${c.dup}（已选 ${c.dupDone}）</span>` : '') +
+    (c.notfound ? `<span class="bs-bad">✕ 未找到 ${c.notfound}</span>` : '') +
+    (c.exists ? `<span class="bs-skip">⊘ 已存在 ${c.exists}</span>` : '');
+  batchConfirm.disabled = addable === 0;
+  batchConfirm.textContent = addable ? `确认添加（${addable}）` : '确认添加';
+  batchHint.textContent = (c.dup - c.dupDone > 0 || c.notfound > 0) ? '重名未选择与未找到的项目将不会添加' : '';
+}
+
+// 重名人工选择 & 异常行移除(事件委托)
+batchResult.addEventListener('click', (e) => {
+  const chip = e.target.closest('.dup-chip');
+  if (chip) {
+    const row = batchRows[+chip.dataset.row];
+    row.chosen = row.matches.find(m => m.dept === chip.dataset.dept);
+    renderBatchResult();
+    return;
+  }
+  const del = e.target.closest('.br-del');
+  if (del) {
+    const row = batchRows[+del.dataset.row];
+    batchInput.value = parseNames(batchInput.value).filter(n => n !== row.input).join('、');
+    renderBatchResult();
+  }
+});
+
+// 确认添加:仅添加匹配成功与重名已选定的,已存在的自动过滤
+batchConfirm.addEventListener('click', () => {
+  if (!batchTarget) return;
+  const api = groupApis[batchTarget];
+  const existing = api.getExisting();
+  const toAdd = [];
+  batchRows.forEach(r => {
+    if (r.status === 'ok') toAdd.push(r.matches[0]);
+    else if (r.status === 'dup' && r.chosen) toAdd.push(r.chosen);
+  });
+  const filtered = toAdd.filter(e => !existing.some(x => x.name === e.name && x.dept === e.dept));
+  const skipped = batchRows.length - filtered.length;
+  api.addBatch(filtered);
+  closeBatch();
+  showToast(filtered.length
+    ? `已添加 ${filtered.length} 人` + (skipped ? `，跳过 ${skipped} 项` : '')
+    : '没有可添加的员工');
+});
+
+/* ================= Toast ================= */
+let toastTimer;
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+}
+</script>
+</body>
+</html>

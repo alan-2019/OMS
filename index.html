@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>大运营数智管理系统</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="rectify.css">
+  <link rel="stylesheet" href="ai-factory.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="icon-sidebar" id="iconSidebar">
+      <div class="icon-logo">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="5" r="3" fill="#4facfe"/>
+          <circle cx="16" cy="27" r="3" fill="#4facfe"/>
+          <circle cx="5" cy="16" r="3" fill="#4facfe"/>
+          <circle cx="27" cy="16" r="3" fill="#4facfe"/>
+          <circle cx="8.2" cy="8.2" r="2.5" fill="#4facfe"/>
+          <circle cx="23.8" cy="8.2" r="2.5" fill="#4facfe"/>
+          <circle cx="8.2" cy="23.8" r="2.5" fill="#4facfe"/>
+          <circle cx="23.8" cy="23.8" r="2.5" fill="#4facfe"/>
+          <circle cx="16" cy="16" r="4" fill="#4facfe"/>
+        </svg>
+      </div>
+      <nav class="icon-nav">
+        <a class="icon-nav-item active" data-section="operation">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="3" y="3" width="8" height="8" rx="1"/>
+            <rect x="13" y="3" width="8" height="8" rx="1"/>
+            <rect x="3" y="13" width="8" height="8" rx="1"/>
+            <rect x="13" y="13" width="8" height="8" rx="1"/>
+          </svg>
+          <span>运营</span>
+        </a>
+        <a class="icon-nav-item" data-section="ai">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="4.5" r="2.2"/>
+            <circle cx="4.5" cy="12" r="2.2"/>
+            <circle cx="19.5" cy="12" r="2.2"/>
+            <circle cx="8" cy="19.5" r="2.2"/>
+            <circle cx="16" cy="19.5" r="2.2"/>
+            <line x1="10.6" y1="6.3" x2="5.8" y2="10.2"/>
+            <line x1="13.4" y1="6.3" x2="18.2" y2="10.2"/>
+            <line x1="5.7" y1="13.9" x2="7.1" y2="17.6"/>
+            <line x1="18.3" y1="13.9" x2="16.9" y2="17.6"/>
+            <line x1="10" y1="19.5" x2="14" y2="19.5"/>
+          </svg>
+          <span>AI</span>
+        </a>
+        <a class="icon-nav-item" data-section="data">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="4" y="4" width="16" height="16" rx="2"/>
+            <line x1="4" y1="10" x2="20" y2="10"/>
+            <line x1="10" y1="4" x2="10" y2="20"/>
+          </svg>
+          <span>数据</span>
+        </a>
+        <a class="icon-nav-item" data-section="settings">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+          <span>设置</span>
+        </a>
+      </nav>
+    </aside>
+
+    <aside class="sub-sidebar" id="subSidebar">
+      <div class="sub-menu" id="subMenu"></div>
+    </aside>
+
+    <div class="sub-sidebar-mask" id="subSidebarMask"></div>
+
+    <div class="main-area">
+      <header class="topbar">
+        <div class="topbar-left">
+          <span class="system-title">大运营数智管理系统</span>
+          <div class="topbar-divider"></div>
+          <div class="breadcrumb" id="breadcrumb">
+            <a class="breadcrumb-item" href="#/home">首页</a>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <div class="search-box">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" placeholder="功能菜单搜索" id="searchInput">
+          </div>
+          <button class="topbar-icon-btn" title="通知">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="1.8">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+          </button>
+          <button class="topbar-icon-btn" title="下载">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="1.8">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
+          <div class="user-info">
+            <div class="user-avatar">张</div>
+            <span class="user-name">张超</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </div>
+        </div>
+      </header>
+
+      <main class="content" id="content"></main>
+    </div>
+  </div>
+
+  <!-- 通知中心抽屉 -->
+  <div class="drawer-mask" id="drawerMask"></div>
+  <div class="drawer" id="notifDrawer">
+    <div class="drawer-header">
+      <span class="drawer-title">通知中心</span>
+      <button class="drawer-close" id="drawerClose">&times;</button>
+    </div>
+    <div class="drawer-body">
+      <div class="notif-sidebar">
+        <div class="notif-sidebar-title">分类</div>
+        <div class="notif-category active" data-cat="all">
+          <span>全部</span>
+          <span class="notif-badge">50</span>
+        </div>
+        <div class="notif-category-group">
+          <div class="notif-category parent expanded" data-cat="task">
+            <span>任务动态</span>
+            <span class="notif-badge">50</span>
+            <svg class="expand-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="notif-category-children">
+            <div class="notif-category child" data-cat="task-assign"><span>任务指派</span><span class="notif-badge">19</span></div>
+            <div class="notif-category child" data-cat="task-receive"><span>任务接收</span></div>
+            <div class="notif-category child" data-cat="task-accept"><span>任务验收</span><span class="notif-badge">2</span></div>
+            <div class="notif-category child" data-cat="task-overdue"><span>逾期预警</span><span class="notif-badge">2</span></div>
+            <div class="notif-category child" data-cat="task-urge"><span>催办提醒</span><span class="notif-badge">2</span></div>
+            <div class="notif-category child" data-cat="task-return"><span>任务退回</span><span class="notif-badge">1</span></div>
+            <div class="notif-category child" data-cat="task-cancel"><span>任务取消</span><span class="notif-badge">3</span></div>
+            <div class="notif-category child" data-cat="task-pause"><span>任务暂停</span><span class="notif-badge">21</span></div>
+          </div>
+        </div>
+        <div class="notif-category-group">
+          <div class="notif-category parent" data-cat="system">
+            <span>系统公告</span>
+            <svg class="expand-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="notif-category-children collapsed">
+            <div class="notif-category child" data-cat="func-update"><span>功能更新</span></div>
+            <div class="notif-category child" data-cat="maintain"><span>维护公告</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="notif-main">
+        <div class="notif-tabs">
+          <div class="notif-tab active" data-tab="all">全部消息</div>
+          <div class="notif-tab" data-tab="unread">未读<span class="unread-count">50</span></div>
+          <div class="notif-tab" data-tab="read">已读</div>
+          <div class="notif-tab-action" id="markAllRead">标为全已读</div>
+        </div>
+        <div class="notif-list" id="notifList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script src="rectify.js"></script>
+  <script src="ai-factory.js"></script>
+</body>
+</html>
